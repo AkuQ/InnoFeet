@@ -1,0 +1,3 @@
+[submodule "TrueSTUDIO/InnoFeet/InnoFeetLib"]
+	path = TrueSTUDIO/InnoFeet/InnoFeetLib
+	url = git@github.com:AkuQ/InnoFeetLib.git
