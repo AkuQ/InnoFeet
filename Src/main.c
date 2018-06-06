@@ -59,12 +59,19 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
-
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-static volatile int64_t interrupt;
+static Sensor* sensor;
+static
+
+int file_buffer_count;
+FIL file_data_out;
+
+enum enState {STATE_ERROR, STATE_STARTING, STATE_MEASURING, STATE_WRITING};
+enum enState state = STATE_STARTING;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,12 +82,12 @@ static void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-int read_i2c_bytes_adapter(int dev_address, int mem_address, byte* const buffer, int n){
+static int read_i2c_bytes_cb(int dev_address, int mem_address, byte* const buffer, int n){
 	if(HAL_OK == HAL_I2C_Mem_Read(&hi2c1, dev_address, mem_address, 1, buffer, n, 100))
 		return SUCCESS;
 	else return ERROR;
 }
-int write_i2c_bytes_adapter(int dev_address, int mem_address, const byte* bytes, int n){
+static int write_i2c_bytes_cb(int dev_address, int mem_address, const byte* bytes, int n){
 	if(HAL_OK == HAL_I2C_Mem_Write(&hi2c1, dev_address, mem_address, 1, (u_int8_t*)bytes, n, 100))
 		return SUCCESS;
 	else return ERROR;
@@ -96,11 +103,7 @@ void blink(int count, int freq) {
 		HAL_Delay(freq);
 		count--;
 	}
-	HAL_Delay(freq * 5);
-	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	HAL_Delay(freq * 5);
-	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	HAL_Delay(freq * 5);
+	HAL_Delay(freq);
 }
 /* USER CODE END PFP */
 
@@ -132,7 +135,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -142,68 +145,48 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
-  I2C_Interface* i2c = i2c_init(SENSOR_DEV_ADDR << 1, &read_i2c_bytes_adapter, &write_i2c_bytes_adapter);
-  Sensor* sensor = sensor_init(i2c);
-
-  sensor_set_wake_on_motion_threshold(sensor, 50);
-  sensor_interrupts_setup_pin(sensor, 0, 0, READ_ANY);
-  sensor_interrupts_set(sensor, 1, 0, 0);
-  i2c_write_byte(i2c,105, (byte)(128u + 64u));
-  HAL_Delay(500);
-  int buffer[10];
-
+  // Initialize memory card
   FATFS fs;
-  volatile FRESULT mres = f_mount(&fs, "0:", 1);
-//  int cdetect = -1;
-  HAL_Delay(500);
+  (f_mount(&fs, "0:", 1) == FR_OK)
+  && (f_open(&file_data_out, "data.csv", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
+  && (f_puts("time_ms,accl_x,accl_y,accl_z,gyro_x,gyro_y,gyro_z,magn_x,magn_y,magn_z\n", &file_data_out) != -1)
+  && (state = STATE_MEASURING)
+  || (state = STATE_ERROR);
 
-  FIL file;
-  volatile FRESULT ores = f_open(&file, "test.txt", 'w');
-  f_puts("Hello World!", &file);
-  volatile FRESULT cres = f_close(&file);
+  // Initialize sensor device
+  sensor = sensor_init(i2c_init(SENSOR_DEV_ADDR << 1, &read_i2c_bytes_cb, &write_i2c_bytes_cb));
+  sensor_set_wake_on_motion_threshold(sensor, 50);
+  sensor_interrupts_set_pin(sensor, 0, 0, READ_INT_STATUS);
 
-  if(ores == FR_OK)
-	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-  else if(ores == FR_NO_FILE)
-	  blink(3,300);
-  else if (ores == FR_NO_PATH)
-	  blink(5, 300);
-  else
-	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
-//
-//  for(;;) {
-//	  cdetect = HAL_GPIO_ReadPin(SPI1_CD_GPIO_Port, SPI1_CD_Pin);
-//	  if(cdetect)  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-//	  else HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
-//  };
-  for(;;);
-
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 1);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+  sensor_interrupts_set_source(sensor, 1, 0, 0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
   while (1) {
+	  int start = HAL_GetTick();
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-//	  if(status == SUCCESS)
-//		  if(i_am == 0x73u)
-//			  blink(3, 200);
-//		  else
-//			  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-//	  else HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
-	  if(interrupt > 0) {
-		  interrupt -= 1;
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-//		  HAL_GetTick();
-		  sensor_measure_all(sensor, buffer);
-//		  HAL_Delay(10);
+	  if(state == STATE_MEASURING) {
+		  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+
+		  state = STATE_WRITING;
+		  f_sync(&file_data_out) == FR_OK
+		  && (state = STATE_MEASURING)
+		  || (state = STATE_ERROR);
+		  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 	  }
-	  else {
-		  interrupt = 0;
+	  else if(state == STATE_ERROR)
+		  blink(3, 100);
+	  else
 		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
-//		  HAL_Delay(10);
-	  }
+
+	  int delay = start - HAL_GetTick() + 500;
+	  if(delay > 0) HAL_Delay(delay);
   }
   /* USER CODE END 3 */
 
@@ -283,7 +266,7 @@ static void MX_I2C1_Init(void)
 {
 
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00000E14;
+  hi2c1.Init.Timing = 0x00300F38;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -436,9 +419,24 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-//	if (GPIO_Pin == GPIO_PIN_EXTI8)
-	interrupt += 1;
-//	interrupt > 100 && (interrupt = 100);
+	static int b[10];
+	static byte temp;
+
+	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
+
+	if(state == STATE_MEASURING) {
+		sensor_measure_all(sensor, b);
+
+		f_printf(
+			&file_data_out,
+			"%u,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+			HAL_GetTick(), b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]) != -1
+		|| (state = STATE_ERROR);
+	}
+	else
+		HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
+
+	sensor_interrupts_clear(sensor);
 }
 /* USER CODE END 4 */
 
