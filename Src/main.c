@@ -64,10 +64,7 @@ SPI_HandleTypeDef hspi1;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 static Sensor* sensor;
-static
-
-int file_buffer_count;
-FIL file_data_out;
+static FIL file_data_out;
 
 enum enState {STATE_ERROR, STATE_STARTING, STATE_MEASURING, STATE_WRITING};
 enum enState state = STATE_STARTING;
@@ -419,8 +416,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	static int b[10];
-	static byte temp;
+	static float b[10];
 
 	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 
@@ -429,7 +425,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 		f_printf(
 			&file_data_out,
-			"%u,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+			"%u,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
 			HAL_GetTick(), b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]) != -1
 		|| (state = STATE_ERROR);
 	}
