@@ -417,16 +417,19 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	static float b[10];
+	static char str[128];
 
 	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 
 	if(state == STATE_MEASURING) {
 		sensor_measure_all(sensor, b);
 
-		f_printf(
-			&file_data_out,
-			"%u,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-			HAL_GetTick(), b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]) != -1
+		sprintf(
+			str,
+			"%lu,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+			HAL_GetTick(), b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]
+		)
+		&& (f_puts(str, &file_data_out) > 0)
 		|| (state = STATE_ERROR);
 	}
 	else
