@@ -1,11 +1,22 @@
 cmake_minimum_required(VERSION 3.0)
-
 set(CMAKE_CXX_STANDARD 11)
+project(InnoFeetTests)
 
-project(Tests)
 
-add_subdirectory(googletest-master)
-#include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+# Fetch googletest files during configuration:
+configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests/googletest-download" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests/googletest-download" )
+
+# Add googletest to build:
+add_subdirectory(
+        "${CMAKE_BINARY_DIR}/tests/googletest-src"
+        "${CMAKE_BINARY_DIR}/tests/googletest-build"
+)
+
+# Link googletest to project:
 target_include_directories(
         gmock_main SYSTEM BEFORE INTERFACE
         ${gtest_SOURCE_DIR}/include
