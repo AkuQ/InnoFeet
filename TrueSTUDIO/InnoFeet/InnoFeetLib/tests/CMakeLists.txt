@@ -39,3 +39,7 @@ target_link_libraries(runByteConversionTests InnoFeet)
 add_executable(runSensorTests sensor_test.cpp)
 target_link_libraries(runSensorTests gmock_main)
 target_link_libraries(runSensorTests InnoFeet)
+
+add_executable(runQueueTests queue_test.cpp)
+target_link_libraries(runQueueTests gmock_main)
+target_link_libraries(runQueueTests InnoFeet)
