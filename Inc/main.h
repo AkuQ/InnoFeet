@@ -67,6 +67,9 @@
 #define SPI1_CD_GPIO_Port GPIOA
 #define SPI1_CS_Pin GPIO_PIN_4
 #define SPI1_CS_GPIO_Port GPIOA
+#define SENSOR_INT_Pin GPIO_PIN_8
+#define SENSOR_INT_GPIO_Port GPIOA
+#define SENSOR_INT_EXTI_IRQn EXTI9_5_IRQn
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

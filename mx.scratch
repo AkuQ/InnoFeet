@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-<ProjectName>/home/akseli/Atollic/TrueSTUDIO/STM32_workspace_9.0/InnoFeet/\InnoFeet</ProjectName>
+<ProjectName>/home/akseli/Atollic/TrueSTUDIO/STM32_workspace_9.0/InnoFeetSTM32/\InnoFeet</ProjectName>
 <ProjectNature>C</ProjectNature> 
 <CMSIS>../Drivers/CMSIS</CMSIS>
 <HAL_Driver>/home/akseli/STM32Cube/Repository//STM32Cube_FW_L4_V1.11.0/Drivers/CMSIS</HAL_Driver>
