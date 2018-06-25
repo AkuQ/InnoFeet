@@ -98,11 +98,11 @@ int _init_properties(Sensor* self) {
 
 int sensor_interrupts_set_pin(Sensor* self, bool active_low, bool open_drain, enum ClearInterruptOn clear_on) {
     byte config_bits = 0;
+    config_bits |= active_low           ? INT_PIN_CFG.ACTL          : 0;
+    config_bits |= open_drain           ? INT_PIN_CFG.OPEN          : 0;
+    config_bits |= clear_on == PULSE    ? 0                         : INT_PIN_CFG.LATCH_EN;
+    config_bits |= clear_on == READ_ANY ? INT_PIN_CFG.ANYRD_2CLEAR  : 0;
 
-    active_low && (config_bits |= INT_PIN_CFG.ACTL);
-    open_drain && (config_bits |= INT_PIN_CFG.OPEN);
-    clear_on != PULSE && (config_bits |= INT_PIN_CFG.LATCH_EN);
-    clear_on == READ_ANY && (config_bits |= INT_PIN_CFG.ANYRD_2CLEAR);
     //INT_PIN_CFG.BYPASS_EN used when external device connected to EDA/ECL pins - ignored, no ext sensors
     //INT_PIN_CFG.FSYNC_MODE_EN enables fsync as an INPUT(?) that causes an interrupt - ignored, no ext interrupts
     //INT_PIN_CFG.FSYNC_ACTL - ignored also
@@ -113,16 +113,35 @@ int sensor_interrupts_set_pin(Sensor* self, bool active_low, bool open_drain, en
 
 int sensor_interrupts_set_source(Sensor* self, bool on_data_ready, bool on_motion, bool on_fifo_overflow) {
     byte config_bits = 0;
-    on_data_ready && (config_bits |= INT_ENABLE.RAW_RDY);
-    on_motion && (config_bits |= INT_ENABLE.WOM);
-    on_fifo_overflow && (config_bits |= INT_ENABLE.FIFO_OVERFLOW);
-
+    config_bits |= on_data_ready    ? INT_ENABLE.RAW_RDY        : 0;
+    config_bits |= on_motion        ? INT_ENABLE.WOM            : 0;
+    config_bits |= on_fifo_overflow ? INT_ENABLE.FIFO_OVERFLOW  : 0;
     TRY(i2c_write_byte(self->i2c, INT_ENABLE.REG, config_bits));
-    if(on_motion)
-        TRY(i2c_write_byte(self->i2c, ACCEL_INTEL_CTRL.REG, ACCEL_INTEL_CTRL.EN | ACCEL_INTEL_CTRL.MODE));
+    TRY(i2c_write_byte(self->i2c, ACCEL_INTEL_CTRL.REG, on_motion ? ACCEL_INTEL_CTRL.EN | ACCEL_INTEL_CTRL.MODE : 0));
     return SUCCESS;
 }
 
+int sensor_fifo_enable(Sensor* self, bool overwrite_on_overflow, byte fifo_data_sources) {
+    TRY(i2c_write_byte(self->i2c, CONFIG));
+    TRY(i2c_write_byte(self->i2c, FIFO_ENABLE.REG, fifo_data_sources));
+    self->fifo_data_source = fifo_data_sources;
+
+
+    TRY(i2c_write_bits(self->i2c, USER_CTRL.REG, USER_CTRL.FIFO_EN));
+
+}
+int sensor_fifo_disable(Sensor* self) {
+
+}
+int sensor_fifo_count(Sensor* self, int* out) {
+    byte count[2];
+    TRY(i2c_read_bytes(self->i2c, FIFO_COUNT, count, 2));
+    *out = (int)bytes_to_uint(count, 2);
+    return SUCCESS;
+}
+int sensor_fifo_clear(Sensor* self) {
+
+}
 
 //PROPERTIES:
 

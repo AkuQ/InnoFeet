@@ -47,6 +47,14 @@ int sensor_interrupts_set_source(Sensor*, bool on_data_ready, bool on_motion, bo
 int _sensor_interrupts_clear1(Sensor*);
 int _sensor_interrupts_clear2(Sensor*, byte cause[1]);
 
+
+int sensor_fifo_enable(Sensor*, bool overwrite_on_overflow, byte fifo_data_sources);
+int sensor_fifo_disable(Sensor*);
+int sensor_fifo_count(Sensor*, int* out);
+int sensor_fifo_clear(Sensor*);
+int sensor_fifo_read_all(Sensor, float* data);
+
+
 int sensor_measure_temp(Sensor*, int buffer[1]);
 int sensor_measure_gyro(Sensor*, int buffer[3]);
 int sensor_measure_accl(Sensor*, int buffer[3]);

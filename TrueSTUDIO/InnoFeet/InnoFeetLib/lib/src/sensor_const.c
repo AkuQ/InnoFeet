@@ -1,6 +1,11 @@
 
 #include "sensor_const.h"
 
+const struct CONFIG CONFIG = {
+        0x1Au,
+
+};
+
 const struct GYRO_CONFIG GYRO_CONFIG = {
         0x1Bu,
         128u, 64u, 32u, 24u, 3u
@@ -9,6 +14,14 @@ const struct GYRO_CONFIG GYRO_CONFIG = {
 const struct ACCEL_CONFIG ACCEL_CONFIG = {
         0x1Cu,
         128u, 64u, 32u, 24u
+};
+
+const struct FIFO_ENABLE FIFO_ENABLE = {
+        0x23u,
+        128u,
+        112u, 64u, 32u, 16u,
+        8u,
+        4u, 2u, 1u
 };
 
 const struct I2C_MST_CTRL I2C_MST_CTRL = {

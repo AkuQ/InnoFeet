@@ -28,7 +28,29 @@ static int AcclRangeAsInt(enum AcclRange en){
 #define SENSOR_DEV_ADDR 0x68
 
 #define SMPDIV 0x19u
-#define CONFIG 0x1Au
+//define CONFIG 0x1Au
+struct CONFIG {
+    byte REG;
+    byte FIFO_MODE;
+    struct {
+        byte DISABLE, TEMP_OUT_L, GYRO_XOUT_L, GYRO_YOUT_L, GYRO_ZOUT_L, ACCEL_XOUT_L, ACCEL_YOUT_L, ACCEL_ZOUT_L;
+    } EXT_SYNC_SET; /**<
+            * Enables the FSYNC pin data to be sampled.<br><br>Fsync will be latched to capture short strobes. This will
+            * be done such that if Fsync toggles, the latched value toggles, but won’t toggle again until the new latched
+            * value is captured by the sample rate strobe. This is a requirement for working with some 3 party devices
+            * that have fsync strobes shorter than our sample rate.*/
+    struct {
+        byte Hz_250gyro_4000temp, Hz_184gyro_188, Hz_92gyro_98temp, Hz_41gyro_42temp, Hz_20both, Hz_10both, Hz_5both,
+        Hz_3600gyro_4000temp;
+    } DLPF_CFG /**<
+            * For the DLPF to be used, fchoice[1:0] must be set to 2’b11, fchoice_b[1:0] is 2’b00.<br><br>The DLPF is
+            * configured by DLPF_CFG, when FCHOICE_B [1:0] = 2b’00. The gyroscope and temperature sensor are filtered
+            * according to the value of DLPF_CFG and FCHOICE_B. Note that FCHOICE is the inverted value of FCHOICE_B
+            * (e.g. FCHOICE=2b’00 is same as FCHOICE_B=2b’11).*/;
+};
+extern const struct CONFIG CONFIG;
+
+
 struct GYRO_CONFIG {
     byte REG;
     byte X_TEST; /**<X Gyro self-test*/
@@ -52,7 +74,20 @@ extern const struct ACCEL_CONFIG ACCEL_CONFIG;
 #define ACCEL_CONFIG2 0x1Du
 #define LP_ACCEL_ODR 0x1Eu
 #define WOM_THR 0x1Fu
-#define FIFO_ENABLE 0x23u
+
+/** REG: 35 (0x23)<br><br>
+ * 1 – Write the specified registers to the FIFO at the sample rate; If enabled, buffering of data occurs
+ * even if data path is in standby. <br>0 – function is disabled
+ */
+struct FIFO_ENABLE {
+    byte REG;
+    byte TEMP_OUT;
+    byte GYRO, GYRO_XOUT, GYRO_YOUT, GYRO_ZOUT;
+    byte ACCEL;
+    byte SLV_2, SLV_1, SLV_0;
+};
+extern const struct FIFO_ENABLE FIFO_ENABLE;
+
 
 struct I2C_MST_CTRL {
     byte REG;
