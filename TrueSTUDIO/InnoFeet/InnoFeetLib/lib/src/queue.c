@@ -18,6 +18,7 @@ Queue* queue_init(unsigned int max_len,  unsigned int item_size) {
     queue->tail = 0;
     queue->item_count = 0;
     queue->data = malloc(max_len * item_size);
+    return queue;
 }
 
 int queue_delete(Queue* self) {
