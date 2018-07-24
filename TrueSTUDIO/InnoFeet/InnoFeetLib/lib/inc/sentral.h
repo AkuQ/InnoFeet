@@ -11,33 +11,38 @@
 typedef struct _SENtral SENtral;
 
 //INIT:
-SENtral* sensor_init(I2C_Interface* i2c);
+SENtral* sentral_init(I2C_Interface* i2c);
 
 //PROPERTIES:
 /// \return  Maximum gyroscope measurement ± in degrees per second
-int sensor_get_gyro_range(SENtral*);
-int sensor_set_gyro_range(SENtral*, enum GyroRange r);
+unsigned short sentral_get_gyro_range(SENtral*);
+int sentral_set_gyro_range(SENtral*, unsigned short r);
 /// \return  Maximum accelerometer measurement ± in Gs
-int sensor_get_accl_range(SENtral*);
-int sensor_set_accl_range(SENtral*, enum AcclRange r);
+unsigned short sentral_get_accl_range(SENtral*);
+int sentral_set_accl_range(SENtral*, unsigned short r);
 /// \return  Maximum magnetometer measurement ± in μT
-int sensor_get_magn_range(SENtral*);
-int sensor_set_accl_range(SENtral*, enum MagnRange r);
+unsigned short sentral_get_magn_range(SENtral*);
+int sentral_set_magn_range(SENtral*, unsigned short r);
 
 //METHODS:
-int sensor_interrupts_set_source(SENtral*, bool cpu_rest, bool error, bool qtern, bool magn, bool accl, bool gyro);
-int sensor_set_data_rates(SENtral*, byte magn_Hz, byte accl_dHz, byte gyro_dHz, byte qtern_div);
-int sensor_set_orientation_mode(SENtral*, bool hpr);
+int sentral_interrupts_set_source(SENtral*, bool cpu_rest, bool error, bool qtern, bool magn, bool accl, bool gyro);
+int sentral_set_data_rates(SENtral*, byte magn_Hz, byte accl_dHz, byte gyro_dHz, byte qtern_div);
+int sentral_set_orientation_mode(SENtral*, bool hpr);
+bool sentral_euler_mode(SENtral*);
 
-int sensor_start(SENtral*);
-int sensor_standby(SENtral*);
-int sensor_reset(SENtral*);
+int sentral_start(SENtral*);
+int sentral_standby(SENtral*);
+int sentral_reset(SENtral*);
 
-int sensor_measure_qtern(SENtral*, int buffer[4]);
-int sensor_measure_gyro(SENtral*, int buffer[3]);
-int sensor_measure_accl(SENtral*, int buffer[3]);
-int sensor_measure_magn(SENtral*, int buffer[3]);
-int sensor_measure_all(SENtral*, float buffer[10]);
-int sensor_measure_all_bytes(SENtral*, byte buffer[20]);
+#define sentral_interrupts_clear(...) OVERLOAD(_sentral_interrupts_clear, __VA_ARGS__)
+int _sentral_interrupts_clear1(SENtral*);
+int _sentral_interrupts_clear2(SENtral*, byte cause[1]);
+
+int sentral_measure_qtern(SENtral*, float buffer[4], int timestamp[1]);
+int sentral_measure_gyro(SENtral*, float buffer[3], int timestamp[1]);
+int sentral_measure_accl(SENtral*, float buffer[3], int timestamp[1]);
+int sentral_measure_magn(SENtral*, float buffer[3], int timestamp[1]);
+int sentral_measure_all(SENtral*, float results[13], int timestamps[4]);
+int sentral_measure_all_bytes(SENtral*, byte buffer[42]);
 
 #endif //PROJECT_SENTRAL_H

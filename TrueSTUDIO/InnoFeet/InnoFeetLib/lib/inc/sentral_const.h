@@ -1,7 +1,5 @@
 
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 #ifndef PROJECT_SENTRAL_CONST_H
 #define PROJECT_SENTRAL_CONST_H
 
@@ -9,6 +7,8 @@
 
 struct _SENtralRegister {
 // Results:
+    byte Results; /**< 0x00<br>All results in orderd Quaternion X/Y/Z/W/T, Mag/Accl/Gyro (X,Y,Z,T).
+            <br>Quaternion results are 4 bytes, other results and timestamps 2;; 30;; */
     byte QX; /**< 0x00<br>Normalized Quaternion – X, or Heading; 	float32; 4; 0.0-1.0 or ±PI; */
     byte QY; /**< 0x04<br>Normalized Quaternion – Y, or Pitch; 		float32; 4; 0.0-1.0 or ±PI/2; */
     byte QZ; /**< 0x08<br>Normalized Quaternion – Z, or Roll; 		float32; 4; 0.0-1.0 or ±PI; */
@@ -29,32 +29,32 @@ struct _SENtralRegister {
 
 // Status:
     byte SentralStatus; /**< 0x37<br>; [7:0]; 1;
-			[0] EEPROM. 1 = EEPROM detected
-			[1] EEUploadDone. 1 = EEPROM upload completed
-			[2] EEUploadError. 1 = Calculated CRC of EEPROM is incorrect. Only valid when EEUploadDone = 1.
-			[3] Idle. 1 = Device in Unprogrammed or Initialized state.
-			[4] NoEEPROM. 1 = No EEPROM detected.
+			<br>[0] EEPROM. 1 = EEPROM detected
+			<br>[1] EEUploadDone. 1 = EEPROM upload completed
+			<br>[2] EEUploadError. 1 = Calculated CRC of EEPROM is incorrect. Only valid when EEUploadDone = 1.
+			<br>[3] Idle. 1 = Device in Unprogrammed or Initialized state.
+			<br>[4] NoEEPROM. 1 = No EEPROM detected.
     ;*/
     byte AlgorithmStatus; /**< 0x38<br>Is SENtral in Standby State;		; 1; Bit[0] 1 or 0; */
     byte PassThroughStatus; /**< 0x9E<br>Is SENtral in Pass-Through State;	; 1; Bit[0] 1 or 0; */
     byte EventStatus; /**< 0x35<br>1 indicates a new event has been generated.; [7:0]; 1;
-			[0] CPURest. SENtral Configuration File needs uploading. See Section 4.1.
-			[1] Error.
-			[2] QuaternionResult.
-			[3] MagResult.
-			[4] AccelResult.
-			[5] GyroResult.
+			<br>[0] CPURest. SENtral Configuration File needs uploading. See Section 4.1.
+			<br>[1] Error.
+			<br>[2] QuaternionResult.
+			<br>[3] MagResult.
+			<br>[4] AccelResult.
+			<br>[5] GyroResult.
 	;*/
     byte RAMVersion; /**< 0x72<br>Unexpected Configuration File revision level; Uint16; 2;; The revision number. See enum SENtralConfigVersion. */
 
 // Errors:
-            byte SensorStatus; /**< 0x36<br>; [7:0]; 1;
-			[0] MagNACK. 1 = NACK from magnetometer.
-			[1] AccelNACK. 1 = NACK from accelerometer.
-			[2] GyroNACK. 1 = NACK from gyroscope.
-			[4] MagDeviceIDErr. 1 = Unexpected DeviceID from magnetometer.
-			[5] AccelDeviceIDErr. 1 = Unexpected DeviceID from accelerometer.
-			[6] GyroDeviceIDErr. 1 = Unexpected DeviceID from gyroscope.
+    byte SensorStatus; /**< 0x36<br>; [7:0]; 1;
+			<br>[0] MagNACK. 1 = NACK from magnetometer.
+			<br>[1] AccelNACK. 1 = NACK from accelerometer.
+			<br>[2] GyroNACK. 1 = NACK from gyroscope.
+			<br>[4] MagDeviceIDErr. 1 = Unexpected DeviceID from magnetometer.
+			<br>[5] AccelDeviceIDErr. 1 = Unexpected DeviceID from accelerometer.
+			<br>[6] GyroDeviceIDErr. 1 = Unexpected DeviceID from gyroscope.
 	;*/
     byte ErrorRegister; /**< 0x50<br>Non-zero value indicated an error. See enum SENtralErrors; [7:0]; 1;; */
 
@@ -66,19 +66,19 @@ struct _SENtralRegister {
     byte PassThroughControl; /**< 0xA0<br>Set SENtral Pass-Through State;	; 1; Bit[0] 1 or 0; */
     byte ResetReq; /**< 0x9B<br>; [7:0]; [0] ResetRequest. 1 = Emulate a hard power down/power up; */
 // (Initialization):
-        byte AlgorithmControl; /**< 0x54<br>; 1;
-			[0] StandbyEnable. 1 = Enable Standby state
-			[1] RawDataEnable. 1 = Raw data provided in MX, MY, MZ, AX, AY, AZ, GX, GY, & GZ. 0 = Scaled sensor data.
-			[2] HPR output. 1 = Heading, pitch, and roll output in QX, QY, & QZ. QW = 0.0. 0 = Quaternion outputs.
-			[7] ParamTransfer. 1 = Enable Parameter Transfer.
+    byte AlgorithmControl; /**< 0x54<br>; 1;
+			<br>[[0] StandbyEnable. 1 = Enable Standby state
+			<br>[[1] RawDataEnable. 1 = Raw data provided in MX, MY, MZ, AX, AY, AZ, GX, GY, & GZ. 0 = Scaled sensor data.
+			<br>[[2] HPRoutput. 1 = Heading, pitch, and roll output in QX, QY, & QZ. QW = 0.0. 0 = Quaternion outputs.
+			<br>[[7] ParamTransfer. 1 = Enable Parameter Transfer.
 	;*/
     byte EnableEvents; /**< 0x33<br>1 indicates an interrupt to the host will be generated for the event; [7:0]; 1;
-			[0] CPUReset. Non-maskable.
-			[1] Error.
-			[2] QuaternionResult.
-			[3] MagResult.
-			[4] AccelResult.
-			[5] GyroResult.
+			<br>[0] CPUReset. Non-maskable.
+			<br>[1] Error.
+			<br>[2] QuaternionResult.
+			<br>[3] MagResult.
+			<br>[4] AccelResult.
+			<br>[5] GyroResult.
 	;*/
     byte MagRate; /**< 0x55<br>Requested magnetometer output data rate. Set to 0 to disable magnetometer.;; 1; Hz; */
     byte AccelRate; /**< 0x56<br>Requested accelerometer output data rate divided by 10. Set to 0 to disable accelerometer.;; 1; Hz/10; */
@@ -86,7 +86,7 @@ struct _SENtralRegister {
     byte QRateDivisor; /**< 0x32<br>Along with GyroRate, establishes output data rate for quaternion data. Default 0, interpreted as 1 (use GyroRate);; 1; GyroRate / QRateDivisor; */
 
 // Parameter Transfer Registers: AlgorithmControl[7] bit set to 1.
-            byte ParamRequest; /**< 0x64<br>; [7:0]; //todo: reference AlgorithmControl setup
+    byte ParamRequest; /**< 0x64<br>; [7:0]; //todo: reference AlgorithmControl setup
 			[0:6] Parameter number to be uploaded or retrieved.
 			[7] Load/Save bit. 1 = Load, 0 = Save.
 	;*/
@@ -131,7 +131,7 @@ struct _SENtralBitFlags {
     byte ParamTransfer; /**< AlgorithmControl[7]<br>Enable Parameter Transfer. */
     //ParamRequest & ParamAcknowledge:
     byte Parameter; /**< ParamRequest[0:6]<br>ParamAcknowledge[0:6]<br>Mask for parameter number to be uploaded or retrieved. */
-    byte LoadOrSave; /**< ParamRequest[7]<br> ParamAcknowledge[7]<br>Load or Save bit.<br>1 = Load<br>0 = Save. */
+    byte LoadParam; /**< ParamRequest[7]<br> ParamAcknowledge[7]<br>Load or Save bit.<br>1 = Load<br>0 = Save. */
     byte ClearParam; /**< ParamRequest[0:7]<br> ParamAcknowledge[0:7]<br>Clear transferred parameter by setting all bits to 0.*/
 } extern const SENtralBitFlags;
 
@@ -154,41 +154,41 @@ enum SENtralConfigVersion {
     ConfigVer_1_2 = 0x0E02
 };
 
-enum SENtralParamaGetter {
+enum SENtralParamGetter {
     GetMagnAccelRange 	= (byte)0x4A, /**< RetrieveParamBytes:
-			[0:1] Magnetometer range (µT)
-			[2:3] Accelerometer range (g)
+			<br>[0:1] Magnetometer range (µT)
+			<br>[2:3] Accelerometer range (g)
 	*/
-    GetGyrolRange 		= (byte)0x4B, /**< RetrieveParamBytes: [0:1] Gyroscope range (dps) */
+    GetGyrolRange 		= (byte)0x4B, /**< RetrieveParamBytes:<br>[0:1] Gyroscope range (dps) */
     GetMagnAcclDriverID = (byte)0x4D, /**< RetrieveParamBytes:
-			[0] Magnetometer driver revision
-			[1] Magnetometer driver ID
-			[2] Accelerometer driver revision
-			[3] Accelerometer driver ID
+			<br>[0] Magnetometer driver revision
+			<br>[1] Magnetometer driver ID
+			<br>[2] Accelerometer driver revision
+			<br>[3] Accelerometer driver ID
 	*/
     GetGyroDriveID 		= (byte)0x4E, /**< RetrieveParamBytes:
-			[0] Gyroscope driver revision
-			[1] Gyroscope driver ID
+			<br>[0] Gyroscope driver revision
+			<br>[1] Gyroscope driver ID
 	*/
     GetAlgorithmID 		= (byte)0x50 /**< RetrieveParamBytes:
-			[0] Algorithm minor revision
-			[1] Algorithm major revision
+			<br>[0] Algorithm minor revision
+			<br>[1] Algorithm major revision
 	*/
 };
 
-enum SENtralParamaSetter {
+enum SENtralParamSetter {
     SetMagnAccelRange 	= (byte)0xCA, /**< LoadParamBytes:
-			[0:1] Magnetometer range (µT)
-			[2:3] Accelerometer range (g)
+			<br>[[0:1] Magnetometer range (µT)
+			<br>[[2:3] Accelerometer range (g)
 	*/
-    SetGyroRange 		= (byte)0xCB, /**< LoadParamBytes: [0:1] Gyroscope range (dps) */
+    SetGyroRange 		= (byte)0xCB, /**< LoadParamBytes<br>[0:1] Gyroscope range (dps) */
 };
 
 // Other constants:
-#define SENtral_TIMESTAMP_RESOLUTION_Hz = 32000
-#define SENtral_DEVICE_ADDRESS = 0x28
-
+#define SENtral_TIMESTAMP_RESOLUTION_Hz 32000
+#define SENtral_DEVICE_ADDRESS 0x28
+#define SENtral_MAGN_FS 1000
+#define SENtral_ACCL_FS 16
+#define SENtral_GYRO_FS 5000
 
 #endif //PROJECT_SENTRAL_CONST_H
-
-#pragma clang diagnostic pop

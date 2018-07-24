@@ -1,7 +1,8 @@
 
+#include "sentral_const.h"
 
 const struct _SENtralRegister SENtralRegister = {
-// Results:
+    /* Results */ 0x00,
     /* QX */ 0x00,
     /* QY */ 0x04,
     /* QZ */ 0x08,
@@ -49,13 +50,13 @@ const struct _SENtralRegister SENtralRegister = {
 };
 
 const struct _SENtralBitFlags SENtralBitFlags = {
-    //SentralStatus:
+//SentralStatus:
     /* EEPROM[0]  */            0b00000001,
     /* EEUploadDone[1]  */      0b00000010,
     /* EEUploadError[2]  */     0b00000100,
     /* Idle[3]  */              0b00001000,
     /* NoEEPROM[4]  */          0b00010000,
-    //EventStatus & EnableEvents:
+//EventStatus & EnableEvents:
     /* CPURest[0]  */           0b00000001,
     /* Error[1]  */             0b00000010,
     /* QuaternionResult[2]  */  0b00000100,
@@ -64,13 +65,13 @@ const struct _SENtralBitFlags SENtralBitFlags = {
     /* GyroResult[5]  */        0b00100000,
     //HostControl:
     /* RunEnable[0]  */         0b00000001,
-    //AlgorithmControl:
+//AlgorithmControl:
     /* StandbyEnable[0]  */     0b00000001,
     /* RawDataEnable[1]  */     0b00000010,
     /* HPRoutput[2]  */         0b00000100,
     /* ParamTransfer[7]  */     0b10000000,
-    //ParamRequest & ParamAcknowledge:
+//ParamRequest & ParamAcknowledge:
     /* Parameter[0:6]  */       0b01111111,
-    /* LoadOrSave[7]  */        0b10000000,
+    /* LoadParam[7]  */         0b10000000,
     /* ClearParam[0:7] */       0b00000000
 };
