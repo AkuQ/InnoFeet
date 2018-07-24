@@ -5,6 +5,7 @@
 
 #include "byte_conversion.h"
 
+//#define INNOFEET_LARGE_ENDIAN
 
 static inline u_int64_t nbyte_max(u_int64_t *value, unsigned int nbytes) {
     if(nbytes > sizeof(u_int64_t)) return ERROR; //todo: handle arbitrary len //todo: error msg/type
@@ -14,14 +15,35 @@ static inline u_int64_t nbyte_max(u_int64_t *value, unsigned int nbytes) {
 }
 
 
+static inline void populate_bytes(u_int64_t src, byte* bytes, int n) {
+#ifdef INNOFEET_LARGE_ENDIAN
+    for(int i = n - 1; i >= 0; i--) {
+#else
+    for(int i = 0; i < n; i++) {
+#endif
+        bytes[i] = (byte)(src & 0b11111111u);
+        src >>= 8;
+    }
+}
+
+static inline u_int64_t depopulate_bytes( const byte* bytes, int n) {
+    u_int64_t ret = 0;
+#ifdef INNOFEET_LARGE_ENDIAN
+    for(int i = 0; i < n; i++)
+#else
+    for(int i = n - 1; i >= 0; i--)
+#endif
+        ret = (ret << 8u) + bytes[i];
+    return ret;
+}
+
+
+
+
 int uint_to_bytes(u_int64_t i, byte *buffer, unsigned int n) {
     if(i >= 1LU << 8 * n) return ERROR;
     //        raise ValueError("Value %d does not fit %d bytes as an unsigned int (max: %d)" % (orig_i, n, (1 << 8 * n) - 1))
-
-    for(int j = n - 1; j >= 0; j--) {
-        buffer[j] = (byte)(i & 0b11111111u);
-        i >>= 8;
-    }
+    populate_bytes(i, buffer, n);
     return SUCCESS;
 }
 
@@ -32,11 +54,7 @@ int int_to_bytes(int64_t i, byte *buffer, unsigned int n) {
     if((i < 0 && ~(bits | mask)) || (i > 0 && bits > mask)) return ERROR;
     //        printf("Value %lu does not fit %d bytes as a signed int (range: -%lu ~ %lu)\n", i, n, (u_int64_t)powl(2,n*8 -1), (u_int64_t)powl(2,n*8 -1));
 
-    for(int j = n - 1; j >= 0; j--) {
-        buffer[j] = (byte)(bits & 0b11111111u);
-        bits >>= 8;
-    }
-
+    populate_bytes(i, buffer, n);
 
     return SUCCESS;
 }
@@ -60,10 +78,7 @@ int float_to_bytes(float f, float r, byte *buffer, unsigned int n) {
 }
 
 unsigned int bytes_to_uint(const byte* b, unsigned int n){
-    unsigned int ret = 0;
-    for(int i = 0; i < n; i++)
-        ret = (ret << 8u) + b[i];
-    return ret;
+    return (int)depopulate_bytes(b, n);
 }
 
 int bytes_to_int(const byte* b, unsigned int n) {
