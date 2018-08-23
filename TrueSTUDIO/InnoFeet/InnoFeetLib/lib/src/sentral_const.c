@@ -37,6 +37,7 @@ const struct _SENtralRegister SENtralRegister = {
     /* GyroRate */ 0x57,
     /* QRateDivisor */ 0x32,
     /* ParamRequest */ 0x64,
+	/* ParamAcknowledge */ 0x3A,
     /* LoadParamBytes */ 0x60,
     /* LoadParamByte0 */ 0x60,
     /* LoadParamByte1 */ 0x61,
