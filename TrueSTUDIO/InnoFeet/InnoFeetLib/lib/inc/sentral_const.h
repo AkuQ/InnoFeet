@@ -159,7 +159,7 @@ enum SENtralParamGetter {
 			<br>[0:1] Magnetometer range (µT)
 			<br>[2:3] Accelerometer range (g)
 	*/
-    GetGyrolRange 		= (byte)0x4B, /**< RetrieveParamBytes:<br>[0:1] Gyroscope range (dps) */
+    GetGyroRange 		= (byte)0x4B, /**< RetrieveParamBytes:<br>[0:1] Gyroscope range (dps) */
     GetMagnAcclDriverID = (byte)0x4D, /**< RetrieveParamBytes:
 			<br>[0] Magnetometer driver revision
 			<br>[1] Magnetometer driver ID
