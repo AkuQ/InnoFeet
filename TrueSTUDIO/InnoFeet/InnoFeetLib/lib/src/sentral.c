@@ -2,11 +2,16 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <sentral.h>
 
 #include "sentral.h"
 #include "byte_conversion.h"
 
+
+const struct SENtralInit SENtralInitDefaults = {
+        {1, 1, 1, 1, 1, 1},
+        {100, 10, 10, 1},
+        0
+};
 
 typedef struct _SENtral {
     I2C_Interface * i2c;
