@@ -14,7 +14,6 @@ static inline u_int64_t nbyte_max(u_int64_t *value, unsigned int nbytes) {
     return SUCCESS;
 }
 
-
 static inline void populate_bytes(u_int64_t src, byte* bytes, int n) {
 #ifdef INNOFEET_LARGE_ENDIAN
     for(int i = n - 1; i >= 0; i--) {
@@ -36,8 +35,6 @@ static inline u_int64_t depopulate_bytes( const byte* bytes, int n) {
         ret = (ret << 8u) + bytes[i];
     return ret;
 }
-
-
 
 
 int uint_to_bytes(u_int64_t i, byte *buffer, unsigned int n) {
@@ -82,7 +79,11 @@ unsigned int bytes_to_uint(const byte* b, unsigned int n){
 }
 
 int bytes_to_int(const byte* b, unsigned int n) {
+#ifdef INNOFEET_LARGE_ENDIAN
     int complement_bit = b[0] & 128u;
+#else
+    int complement_bit = b[n-1] & 128u;
+#endif
     int ret = bytes_to_uint(b, n);
     if(complement_bit)
         ret -= (1u << n * 8) - 1;
@@ -91,17 +92,19 @@ int bytes_to_int(const byte* b, unsigned int n) {
 
 
 float bytes_to_ufloat(const byte* b, unsigned int n, float r) {
+	u_int64_t max;
+	TRY(nbyte_max(&max, n)); //todo: handle error
+
     float v = (float)bytes_to_uint(b, n);
-    u_int64_t max;
-    TRY(nbyte_max(&max, n)); //todo: handle error
     return v / max * r;
 }
 
 
 float bytes_to_float(const byte* b, unsigned int n, float r) {
+	u_int64_t max;
+	TRY(nbyte_max(&max, n)); //todo: handle error
+	max >>= 1;
+
     float v = (float)bytes_to_int(b, n);
-    u_int64_t max;
-    TRY(nbyte_max(&max, n)); //todo: handle error
-    max >>= 1;
     return v / max * r;
 }
