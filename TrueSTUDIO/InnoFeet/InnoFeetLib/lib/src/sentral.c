@@ -129,9 +129,6 @@ int _sentral_set_data_rates(SENtral *self, byte magn_Hz, byte accl_dHz, byte gyr
 int _sentral_set_orientation_mode(SENtral *self, bool euler){ volatile byte temp1;
     if (euler) { 	WRITE_B( REG AlgorithmControl, FLAG HPRoutput ); }
     else { 			UNSET_B( REG AlgorithmControl, FLAG HPRoutput ); }
-
-    READ( REG AlgorithmControl, &temp1);
-
     return SUCCESS;
 }
 
