@@ -20,6 +20,5 @@ unsigned int bytes_to_uint(const byte* b, unsigned int n);
 int bytes_to_int(const byte* b, unsigned int n);
 float bytes_to_ufloat(const byte* b, unsigned int n, float r);
 float bytes_to_float(const byte* b, unsigned int n, float r);
-float ubytes_to_float(const byte* b, unsigned int n, float r);
 
 #endif //INNOFEET_BYTE_CONVERSION_H
