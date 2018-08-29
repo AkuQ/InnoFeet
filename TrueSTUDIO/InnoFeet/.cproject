@@ -121,8 +121,13 @@
 							<option id="com.atollic.truestudio.general.runtimelib.1029398354.1970323998" name="Runtime Library" superClass="com.atollic.truestudio.general.runtimelib.1029398354" />
 							<option id="com.atollic.truestudio.toolchain_options.mcu.197869107.1521604507" name="Microcontroller" superClass="com.atollic.truestudio.toolchain_options.mcu.197869107" />
 							<option id="com.atollic.truestudio.toolchain_options.vendor.1716684053.590296860" name="Vendor name" superClass="com.atollic.truestudio.toolchain_options.vendor.1716684053" />
-							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.485687725" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as.1545899283" />
-							<tool id="com.atollic.truestudio.exe.debug.toolchain.gcc.1277755723" name="C Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gcc.1836874447" />
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.atollic.truestudio.exe.debug.toolchain.platform" isAbstract="false" name="Debug platform" osList="all" superClass="com.atollic.truestudio.exe.debug.toolchain.platform" />
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.as.485687725" name="Assembler" superClass="com.atollic.truestudio.exe.debug.toolchain.as.1545899283">
+								<inputType id="com.atollic.truestudio.as.input.446907408" name="Input" superClass="com.atollic.truestudio.as.input" />
+							</tool>
+							<tool id="com.atollic.truestudio.exe.debug.toolchain.gcc.1277755723" name="C Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gcc.1836874447">
+								<inputType id="com.atollic.truestudio.gcc.input.362001179" superClass="com.atollic.truestudio.gcc.input" />
+							</tool>
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.ld.289747083" name="C Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ld.1444973427" />
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.gpp.1658186989" name="C++ Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp.981298185" />
 							<tool id="com.atollic.truestudio.exe.debug.toolchain.ldcc.929295585" name="C++ Linker" superClass="com.atollic.truestudio.exe.debug.toolchain.ldcc.428260" />
