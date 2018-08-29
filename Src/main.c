@@ -166,7 +166,6 @@ int main(void)
   || (	state = STATE_ERROR																						);
 
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 1);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
   /* USER CODE END 2 */
 
