@@ -7,7 +7,7 @@
 #include "byte_conversion.h"
 
 
-const struct SENtralInit SENtralInitDefaults = {
+const SENtralInit SENtralInitDefaults = {
         {1, 1, 1, 1, 1, 1},
         {100, 10, 10, 1},
         0
@@ -15,7 +15,7 @@ const struct SENtralInit SENtralInitDefaults = {
 
 typedef struct _SENtral {
     I2C_Interface * i2c;
-    struct SENtralInit init;
+    SENtralInit init;
     unsigned short gyro_range;
     unsigned short accl_range;
     unsigned short magn_range;
@@ -48,14 +48,12 @@ typedef struct _SENtral {
 int _load_param(SENtral* self, enum SENtralParamSetter param, byte value[4]) {
     byte ack_param;
 
-    WRITE_N(   REG LoadParamBytes,      value, 4); //todo: can attach below ParamRequest to this multi-byte write ()
+    WRITE_N(   REG LoadParamBytes,      value, 4); //todo optimization: can attach below ParamRequest to this multi-byte write
     WRITE(     REG ParamRequest,        FLAG LoadParam | MASK Parameter & param);
     WRITE_B(   REG AlgorithmControl,    FLAG ParamTransfer);
     do READ(      REG ParamAcknowledge,    &ack_param) while (ack_param != param);
     WRITE(     REG ParamRequest,        FLAG ClearParam);
     UNSET_B(   REG AlgorithmControl,    FLAG ParamTransfer);
-    if(ack_param != param)
-        return ERROR; //todo: more descriptive error
     return SUCCESS;
 }
 
@@ -67,7 +65,7 @@ int _retrieve_param(SENtral* self, enum SENtralParamGetter param, byte buffer[4]
     do READ( REG ParamAcknowledge,    &ack_param) while(ack_param != param); //todo: endless loop handling
     READ_N(  REG RetrieveParamBytes,  buffer, 4);
     WRITE(   REG ParamRequest,        FLAG ClearParam);
-    UNSET_B( REG AlgorithmControl,  FLAG ParamTransfer);
+    UNSET_B( REG AlgorithmControl,    FLAG ParamTransfer);
     return SUCCESS;
 }
 
@@ -128,10 +126,12 @@ int _sentral_set_data_rates(SENtral *self, byte magn_Hz, byte accl_dHz, byte gyr
     return SUCCESS;
 }
 
-int _sentral_set_orientation_mode(SENtral *self, bool euler){
-    byte flag = 0;
-    euler && (flag |= FLAG HPRoutput);
-    WRITE_B( REG AlgorithmControl, flag);
+int _sentral_set_orientation_mode(SENtral *self, bool euler){ volatile byte temp1;
+    if (euler) { 	WRITE_B( REG AlgorithmControl, FLAG HPRoutput ); }
+    else { 			UNSET_B( REG AlgorithmControl, FLAG HPRoutput ); }
+
+    READ( REG AlgorithmControl, &temp1);
+
     return SUCCESS;
 }
 
@@ -153,9 +153,10 @@ int _sentral_start(SENtral *self){
 }
 
 //INIT:
-SENtral* sentral_init(I2C_Interface* i2c, struct SENtralInit init){
+SENtral* sentral_init(I2C_Interface* i2c, SENtralInit init){
     SENtral* self = malloc(sizeof(*self));
     self->i2c = i2c;
+    self->init = init;
 
     _reset(self);
 

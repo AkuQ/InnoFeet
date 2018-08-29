@@ -10,7 +10,7 @@
 //TYPE:
 
 /// \brief Initialization parameters for sentral_init().
-struct SENtralInit {
+typedef struct {
     /// \brief Enables interrupt sources.
     struct {bool cpu_reset, error, magn, accl, gyro, qtern;} interrupts;
     /// \brief Sets sensor data rates.
@@ -21,13 +21,15 @@ struct SENtralInit {
     /// \note Setting data rate to 0 will disable that sensor, but this will also disable SENtral's calibration algorithms.
     struct {byte magn_Hz, accl_dHz, gyro_dHz, qtern_div;} data_rates;
     bool euler_mode; /**< When set to TRUE sentral returns orientation in heading-pitch-roll. Set to FALSE for quaternion.*/
-} extern const SENtralInitDefaults;
+} SENtralInit;
+extern const SENtralInit SENtralInitDefaults;
+
 typedef struct _SENtral SENtral;
 
 
 //INIT:
 
-SENtral* sentral_init(I2C_Interface* i2c, struct SENtralInit init);
+SENtral* sentral_init(I2C_Interface* i2c, SENtralInit init);
 
 
 //PROPERTIES:
