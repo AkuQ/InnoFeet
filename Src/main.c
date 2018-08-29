@@ -52,7 +52,7 @@
 #include "fatfs.h"
 
 /* USER CODE BEGIN Includes */
-#include "sensor.h"
+#include "sentral.h"
 
 
 /* USER CODE END Includes */
@@ -64,8 +64,9 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-static Sensor* sensor;
+static SENtral* sensor;
 static FIL file_data_out;
+static volatile int interrupted = 0;
 
 enum enState {STATE_ERROR, STATE_STARTING, STATE_MEASURING, STATE_WRITING};
 enum enState state = STATE_STARTING;
@@ -144,50 +145,65 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // Initialize memory card
+  char* cvs_header = "t,qt,qx,qy,qz,qw,mt,mx,my,mz,at,ax,ay,az,gt,gx,gy,gz\n";
+
   FATFS fs;
-  (f_mount(&fs, "0:", 1) == FR_OK)
-  && (f_open(&file_data_out, "data.csv", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
-  && (f_puts("time_ms,accl_x,accl_y,accl_z,gyro_x,gyro_y,gyro_z,magn_x,magn_y,magn_z\n", &file_data_out) != -1)
-  && (state = STATE_MEASURING)
-  || (state = STATE_ERROR);
+  (		f_mount(&fs, "0:", 1) == FR_OK																			)
+  && (	f_open(&file_data_out, "data.csv", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK								)
+  && (	f_puts(cvs_header, &file_data_out) != -1																)
+  && (	state = STATE_MEASURING																					)
+  || (	state = STATE_ERROR																						);
 
   // Initialize sensor device
-  sensor = sensor_init(i2c_init(SENSOR_DEV_ADDR << 1, &read_i2c_bytes_cb, &write_i2c_bytes_cb));
-  sensor_set_wake_on_motion_threshold(sensor, 50);
-  sensor_interrupts_set_pin(sensor, 0, 0, READ_INT_STATUS);
+  I2C_Interface* i2c = i2c_init(SENtral_DEVICE_ADDRESS << 1, &read_i2c_bytes_cb, &write_i2c_bytes_cb);
+  SENtralInit init = SENtralInitDefaults;
 
+  sensor = sentral_init(i2c, init);
+
+  (		state == STATE_MEASURING																				)
+  && (	sentral_set_accl_range(sensor, 16)						== SUCCESS										)
+  && (	sentral_set_gyro_range(sensor, 2000)					== SUCCESS										)
+  || (	state = STATE_ERROR																						);
+
+  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 1);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-  sensor_interrupts_set_source(sensor, 1, 0, 0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   while (1) {
-	  int start = HAL_GetTick();
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  if(state == STATE_MEASURING) {
-		  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+   	  if(state == STATE_MEASURING && interrupted) {
+   		  interrupted = 0;
+   		  char str[200];
+   		  int tb[4];
+   		  float mb[13];
+   		  sentral_measure_all(sensor, mb, tb);
 
-		  state = STATE_WRITING;
-		  f_sync(&file_data_out) == FR_OK
-		  && (state = STATE_MEASURING)
-		  || (state = STATE_ERROR);
-		  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-	  }
-	  else if(state == STATE_ERROR)
-		  blink(3, 100);
-	  else
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
-
-	  int delay = start - HAL_GetTick() + 500;
-	  if(delay > 0) HAL_Delay(delay);
+   		  sprintf(
+  			  str,
+  			  "%lu,%d,%f,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f\n",
+  			  HAL_GetTick(),
+  			  tb[0], mb[0x0], mb[0x1], mb[0x2], mb[0x3],
+  			  tb[1], mb[0x4], mb[0x5], mb[0x6],
+  			  tb[2], mb[0x7], mb[0x8], mb[0x9],
+  			  tb[3], mb[0xA], mb[0xB], mb[0xC]
+  		  )
+   		  && (f_puts(str, &file_data_out) > 0)
+		  && (f_sync(&file_data_out) == FR_OK)
+  		  || (state = STATE_ERROR);
+  	  }
+  	  else if(state == STATE_ERROR)
+  		  blink(3, 100);
+  	  else if (state == STATE_MEASURING)
+  		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
+  	  else
+  		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
   }
   /* USER CODE END 3 */
-
 }
 
 /**
@@ -279,7 +295,7 @@ static void MX_I2C1_Init(void)
 
     /**Configure Analogue filter 
     */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_DISABLE) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -410,33 +426,22 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	static float b[10];
-	static char str[128];
-
 	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 
 	if(state == STATE_MEASURING) {
-		sensor_measure_all(sensor, b);
-
-		sprintf(
-			str,
-			"%lu,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-			HAL_GetTick(), b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]
-		)
-		&& (f_puts(str, &file_data_out) > 0)
-		|| (state = STATE_ERROR);
+		interrupted = 1;
 	}
-	else
-		HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
+	else HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
 
-	sensor_interrupts_clear(sensor);
+//	byte src;
+//	sentral_interrupts_clear(sensor, &src);
 }
 /* USER CODE END 4 */
 
