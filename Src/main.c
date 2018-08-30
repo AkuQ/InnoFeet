@@ -70,6 +70,7 @@ static volatile int interrupted = 0;
 
 enum enState {STATE_ERROR, STATE_STARTING, STATE_MEASURING, STATE_WRITING};
 enum enState state = STATE_STARTING;
+#define INT_ERROR_BITS (SENtralBitFlags.Error | SENtralBitFlags.CPURest)
 
 /* USER CODE END PV */
 
@@ -151,7 +152,7 @@ int main(void)
   (		f_mount(&fs, "0:", 1) == FR_OK																			)
   && (	f_open(&file_data_out, "data.csv", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK								)
   && (	f_puts(cvs_header, &file_data_out) != -1																)
-  && (	state = STATE_MEASURING																					)
+  && (	state = STATE_STARTING																					)
   || (	state = STATE_ERROR																						);
 
   // Initialize sensor device
@@ -159,10 +160,10 @@ int main(void)
   SENtralInit init = SENtralInitDefaults;
 
   sensor = sentral_init(i2c, init);
-
-  (		state == STATE_MEASURING																				)
+  (		state == STATE_STARTING																					)
   && (	sentral_set_accl_range(sensor, 16)						== SUCCESS										)
   && (	sentral_set_gyro_range(sensor, 2000)					== SUCCESS										)
+  && (  state = STATE_MEASURING																					)
   || (	state = STATE_ERROR																						);
 
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
@@ -177,12 +178,16 @@ int main(void)
   /* USER CODE BEGIN 3 */
    	  if(state == STATE_MEASURING && interrupted) {
    		  interrupted = 0;
+   		  byte interrupt_cause;
+
    		  char str[200];
    		  int tb[4];
    		  float mb[13];
    		  sentral_measure_all(sensor, mb, tb);
 
-   		  sprintf(
+   		  ( sentral_interrupts_clear(sensor, &interrupt_cause) == SUCCESS )
+		  && !( interrupt_cause & INT_ERROR_BITS)
+   		  && sprintf(
   			  str,
   			  "%lu,%d,%f,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f\n",
   			  HAL_GetTick(),
@@ -434,10 +439,12 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 
-	if(state == STATE_MEASURING) {
-		interrupted = 1;
+	if(GPIO_Pin = SENSOR_INT_Pin) {
+		if(state == STATE_MEASURING) {
+			interrupted = 1;
+		}
+		else HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
 	}
-	else HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
 
 //	byte src;
 //	sentral_interrupts_clear(sensor, &src);
