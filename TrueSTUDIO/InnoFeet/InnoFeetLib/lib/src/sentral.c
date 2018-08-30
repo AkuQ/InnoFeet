@@ -10,7 +10,7 @@
 const SENtralInit SENtralInitDefaults = {
         {1, 1, 1, 1, 1, 1},
         {100, 10, 10, 1},
-        0
+        0, 0
 };
 
 typedef struct _SENtral {
@@ -41,6 +41,7 @@ typedef struct _SENtral {
 #define READ(a, b)          TRY(i2c_read_byte(self->i2c, a, b))
 #define READ_N(a, b, c)     TRY(i2c_read_bytes(self->i2c, a, b, c))
 #define WRITE_B(a, b)       TRY(i2c_write_bits(self->i2c, a, b))
+#define WRITE_M(a, b, c)    TRY(i2c_write_bits(self->i2c, a, b, c))
 #define UNSET_B(a, b)       TRY(i2c_write_bits(self->i2c, a, 0, b))
 
 //PRIVATE:
@@ -51,7 +52,7 @@ int _load_param(SENtral* self, enum SENtralParamSetter param, byte value[4]) {
     WRITE_N(   REG LoadParamBytes,      value, 4); //todo optimization: can attach below ParamRequest to this multi-byte write
     WRITE(     REG ParamRequest,        FLAG LoadParam | MASK Parameter & param);
     WRITE_B(   REG AlgorithmControl,    FLAG ParamTransfer);
-    do READ(      REG ParamAcknowledge,    &ack_param) while (ack_param != param);
+    do READ(   REG ParamAcknowledge,    &ack_param) while (ack_param != param);
     WRITE(     REG ParamRequest,        FLAG ClearParam);
     UNSET_B(   REG AlgorithmControl,    FLAG ParamTransfer);
     return SUCCESS;
@@ -126,9 +127,13 @@ int _sentral_set_data_rates(SENtral *self, byte magn_Hz, byte accl_dHz, byte gyr
     return SUCCESS;
 }
 
-int _sentral_set_orientation_mode(SENtral *self, bool euler){ volatile byte temp1;
-    if (euler) { 	WRITE_B( REG AlgorithmControl, FLAG HPRoutput ); }
-    else { 			UNSET_B( REG AlgorithmControl, FLAG HPRoutput ); }
+int _sentral_set_algorithm_mode(SENtral *self, bool euler, bool raw_data){
+	byte mask = FLAG HPRoutput & FLAG RawDataEnable;
+	byte flags = 0;
+	euler 		&& (flags |= FLAG HPRoutput);
+	raw_data 	&& (flags |= FLAG RawDataEnable);
+
+	WRITE_M( REG AlgorithmControl, flags, mask );
     return SUCCESS;
 }
 
@@ -169,8 +174,9 @@ SENtral* sentral_init(I2C_Interface* i2c, SENtralInit init){
             init.interrupts.accl,
             init.interrupts.gyro,
             init.interrupts.qtern);
-    _sentral_set_orientation_mode(self,
-            init.euler_mode);
+    _sentral_set_algorithm_mode(self,
+            init.euler_mode,
+			init.raw_data);
 
     _sentral_start(self);
 

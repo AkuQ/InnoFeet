@@ -21,6 +21,7 @@ typedef struct {
     /// \note Setting data rate to 0 will disable that sensor, but this will also disable SENtral's calibration algorithms.
     struct {byte magn_Hz, accl_dHz, gyro_dHz, qtern_div;} data_rates;
     bool euler_mode; /**< When set to TRUE sentral returns orientation in heading-pitch-roll. Set to FALSE for quaternion.*/
+    bool raw_data;
 } SENtralInit;
 extern const SENtralInit SENtralInitDefaults;
 
