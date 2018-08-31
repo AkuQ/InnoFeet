@@ -176,7 +176,7 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-   	  if(state == STATE_MEASURING && interrupted) {
+   	  if(interrupted && state == STATE_MEASURING) {
    		  interrupted = 0;
    		  byte interrupt_cause;
 
