@@ -208,6 +208,7 @@ int main(void)
   		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
   }
   /* USER CODE END 3 */
+
 }
 
 /**
@@ -439,7 +440,7 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 
-	if(GPIO_Pin = SENSOR_INT_Pin) {
+	if(GPIO_Pin == SENSOR_INT_Pin) {
 		if(state == STATE_MEASURING) {
 			interrupted = 1;
 		}
