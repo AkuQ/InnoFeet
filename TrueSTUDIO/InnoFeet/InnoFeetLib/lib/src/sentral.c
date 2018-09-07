@@ -128,7 +128,7 @@ int _sentral_set_data_rates(SENtral *self, byte magn_Hz, byte accl_dHz, byte gyr
 }
 
 int _sentral_set_algorithm_mode(SENtral *self, bool euler, bool raw_data){
-	byte mask = FLAG HPRoutput & FLAG RawDataEnable;
+	byte mask = FLAG HPRoutput | FLAG RawDataEnable;
 	byte flags = 0;
 	euler 		&& (flags |= FLAG HPRoutput);
 	raw_data 	&& (flags |= FLAG RawDataEnable);
