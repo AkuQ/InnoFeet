@@ -68,9 +68,10 @@ static SENtral* sensor;
 static FIL file_data_out;
 static volatile int interrupted = 0;
 
-enum enState {STATE_ERROR, STATE_STARTING, STATE_MEASURING, STATE_WRITING};
+enum enState {STATE_ERROR, STATE_STARTING, STATE_RUNNING, STATE_DONE};
 enum enState state = STATE_STARTING;
 #define INT_ERROR_BITS (SENtralBitFlags.Error | SENtralBitFlags.CPURest)
+#define BEAR_SHITS_IN_WOODS 1
 
 /* USER CODE END PV */
 
@@ -104,6 +105,37 @@ void blink(int count, int freq) {
 		count--;
 	}
 	HAL_Delay(freq);
+}
+void write_timestamps(FIL* file, long unsigned duration) {
+	long started = HAL_GetTick();
+	long unsigned count = 0;
+	while (state == STATE_RUNNING) {
+		long t = HAL_GetTick();
+		count += 42;
+		int c = f_printf(file, "%20lu,%20lu\n", t, count);
+		(c == EOF || c != 42) && (state = STATE_ERROR) || (state = STATE_RUNNING);
+		(duration > 0) && (t - started >= duration) && (state = STATE_DONE);
+	}
+}
+
+void write_timestamps_with_fsync(FIL* file, long unsigned duration, long unsigned sync_interval) {
+	long started = HAL_GetTick();
+	long unsigned count = 0;
+	while (state == STATE_RUNNING) {
+		long t = HAL_GetTick();
+		count += 42;
+		(f_printf(file, "%20lu,%20lu\n", t, count) != 42)
+		&& (state = STATE_ERROR)
+		||
+		(count >= sync_interval)
+		&& !(count = 0)
+		&& (f_sync(file) != FR_OK)
+		&& (state = STATE_ERROR)
+		||
+		(state = STATE_RUNNING);
+
+		(duration > 0) && (t - started >= duration) && (state = STATE_DONE);
+	}
 }
 /* USER CODE END PFP */
 
@@ -146,66 +178,44 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // Initialize memory card
-  char* cvs_header = "t,qt,qx,qy,qz,qw,mt,mx,my,mz,at,ax,ay,az,gt,gx,gy,gz\n";
 
   FATFS fs;
   (		f_mount(&fs, "0:", 1) == FR_OK																			)
-  && (	f_open(&file_data_out, "data.csv", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK								)
-  && (	f_puts(cvs_header, &file_data_out) != -1																)
+  && (	f_open(&file_data_out, "test.txt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK								)
   && (	state = STATE_STARTING																					)
   || (	state = STATE_ERROR																						);
 
   // Initialize sensor device
-  I2C_Interface* i2c = i2c_init(SENtral_DEVICE_ADDRESS << 1, &read_i2c_bytes_cb, &write_i2c_bytes_cb);
-  SENtralInit init = SENtralInitDefaults;
-
-  sensor = sentral_init(i2c, init);
-  (		state == STATE_STARTING																					)
-  && (	sentral_set_accl_range(sensor, 16)						== SUCCESS										)
-  && (	sentral_set_gyro_range(sensor, 2000)					== SUCCESS										)
-  && (  state = STATE_MEASURING																					)
-  || (	state = STATE_ERROR																						);
+//  I2C_Interface* i2c = i2c_init(SENtral_DEVICE_ADDRESS << 1, &read_i2c_bytes_cb, &write_i2c_bytes_cb);
+//  SENtralInit init = SENtralInitDefaults;
+//  init.raw_data = 1;
+//
+//  sensor = sentral_init(i2c, init);
+//  (		state == STATE_STARTING																					)
+//  && (	sentral_set_accl_range(sensor, 16)						== SUCCESS										)
+//  && (	sentral_set_gyro_range(sensor, 2000)					== SUCCESS										)
+//  && (  state = STATE_MEASURING																					)
+//  || (	state = STATE_ERROR																						);
 
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+//  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  state = STATE_RUNNING;
+
   while (1) {
+	  if(state == STATE_ERROR) 	do blink(3, 100); while(BEAR_SHITS_IN_WOODS);
+	  if(state == STATE_DONE)	do blink(3, 500); while(BEAR_SHITS_IN_WOODS);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-   	  if(interrupted && state == STATE_MEASURING) {
-   		  interrupted = 0;
-   		  byte interrupt_cause;
 
-   		  char str[200];
-   		  int tb[4];
-   		  float mb[13];
-   		  sentral_measure_all(sensor, mb, tb);
+//	  write_timestamps(&file_data_out, 5*60000);
+	  write_timestamps_with_fsync(&file_data_out, 5*60000, 1000);
+	  (f_close(&file_data_out) == FR_OK) || (state = STATE_ERROR);
 
-   		  ( sentral_interrupts_clear(sensor, &interrupt_cause) == SUCCESS )
-		  && !( interrupt_cause & INT_ERROR_BITS)
-   		  && sprintf(
-  			  str,
-  			  "%lu,%d,%f,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f\n",
-  			  HAL_GetTick(),
-  			  tb[0], mb[0x0], mb[0x1], mb[0x2], mb[0x3],
-  			  tb[1], mb[0x4], mb[0x5], mb[0x6],
-  			  tb[2], mb[0x7], mb[0x8], mb[0x9],
-  			  tb[3], mb[0xA], mb[0xB], mb[0xC]
-  		  )
-   		  && (f_puts(str, &file_data_out) > 0)
-		  && (f_sync(&file_data_out) == FR_OK)
-  		  || (state = STATE_ERROR);
-  	  }
-  	  else if(state == STATE_ERROR)
-  		  blink(3, 100);
-  	  else if (state == STATE_MEASURING)
-  		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
-  	  else
-  		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 0);
   }
   /* USER CODE END 3 */
 
@@ -441,14 +451,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	HAL_NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 
 	if(GPIO_Pin == SENSOR_INT_Pin) {
-		if(state == STATE_MEASURING) {
+		if(state == STATE_RUNNING) {
 			interrupted = 1;
 		}
 		else HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
 	}
-
-//	byte src;
-//	sentral_interrupts_clear(sensor, &src);
 }
 /* USER CODE END 4 */
 
