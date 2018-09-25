@@ -19,6 +19,7 @@ typedef struct _SENtral {
     unsigned short gyro_range;
     unsigned short accl_range;
     unsigned short magn_range;
+    int error;
 } _SENtral;
 
 //State:
@@ -70,14 +71,14 @@ int _retrieve_param(SENtral* self, enum SENtralParamGetter param, byte buffer[4]
     return SUCCESS;
 }
 
-int _parse_sensor_bytes(SENtral* self, byte bytes[8], float buffer[3], int scale){
+float _parse_sensor_bytes(SENtral* self, byte bytes[8], float buffer[3], int scale){
     buffer[0] = bytes_to_float(bytes+0, 2, scale); //X
     buffer[1] = bytes_to_float(bytes+2, 2, scale); //Y
     buffer[2] = bytes_to_float(bytes+4, 2, scale); //Z
-    return bytes_to_uint(bytes+6, 2); //Time
+    return bytes_to_ufloat(bytes+6, 2, 2048.0); //Time
 }
 
-int _parse_qtern_bytes(SENtral* self, byte bytes[18], float buffer[4]){
+float _parse_qtern_bytes(SENtral* self, byte bytes[18], float buffer[4]){
     if(self->init.euler_mode) {
         buffer[0] = bytes_to_float(bytes+0, 4, (float)M_PI  ); //QX
         buffer[1] = bytes_to_float(bytes+4, 4, (float)M_PI_2); //QY
@@ -90,7 +91,7 @@ int _parse_qtern_bytes(SENtral* self, byte bytes[18], float buffer[4]){
         buffer[2] = bytes_to_ufloat(bytes+8,  4, 1.0); //QZ
         buffer[3] = bytes_to_ufloat(bytes+12, 4, 1.0); //QW
     }
-    return bytes_to_uint(bytes+16, 2); //QTime
+    return bytes_to_ufloat(bytes+16, 2, 2048.0); //QTime
 }
 
 int _reset(SENtral* self) {
@@ -101,10 +102,12 @@ int _reset(SENtral* self) {
     while(!(status & FLAG EEUploadDone)) //todo: handle eternal loop
         READ( REG SentralStatus, &status);
     TRY(status & FLAG EEUploadError ? ERROR : SUCCESS);
+    return SUCCESS;
 }
 
 int _sentral_interrupts_set_source(SENtral *self, bool cpu_rest, bool error, bool magn, bool accl, bool gyro, bool qtern){
     byte flags = 0;
+    byte check = 0;
     cpu_rest && (flags |= FLAG CPURest);
     error    && (flags |= FLAG Error);
     qtern    && (flags |= FLAG QuaternionResult);
@@ -113,6 +116,8 @@ int _sentral_interrupts_set_source(SENtral *self, bool cpu_rest, bool error, boo
     gyro     && (flags |= FLAG GyroResult);
 
     WRITE( REG EnableEvents, flags);
+    READ(  REG EnableEvents, &check);
+    TRY(check == flags ? SUCCESS : ERROR);
     return SUCCESS;
 }
 
@@ -130,10 +135,13 @@ int _sentral_set_data_rates(SENtral *self, byte magn_Hz, byte accl_dHz, byte gyr
 int _sentral_set_algorithm_mode(SENtral *self, bool euler, bool raw_data){
 	byte mask = FLAG HPRoutput | FLAG RawDataEnable;
 	byte flags = 0;
+    byte check = 0;
 	euler 		&& (flags |= FLAG HPRoutput);
 	raw_data 	&& (flags |= FLAG RawDataEnable);
 
 	WRITE_M( REG AlgorithmControl, flags, mask );
+	READ(    REG AlgorithmControl, &check)
+    TRY((mask & check) == flags ? SUCCESS : ERROR);
     return SUCCESS;
 }
 
@@ -159,28 +167,32 @@ SENtral* sentral_init(I2C_Interface* i2c, SENtralInit init){
     SENtral* self = malloc(sizeof(*self));
     self->i2c = i2c;
     self->init = init;
+    self->error = SUCCESS;
 
-    _reset(self);
-
-    _sentral_set_data_rates(self,
+    ((  _reset(self)                    == SUCCESS)
+    && (_sentral_set_data_rates(self,
             init.data_rates.magn_Hz,
             init.data_rates.accl_dHz,
             init.data_rates.gyro_dHz,
-            init.data_rates.qtern_div);
-    _sentral_interrupts_set_source(self,
+            init.data_rates.qtern_div)  == SUCCESS)
+    && (_sentral_interrupts_set_source(self,
             init.interrupts.cpu_reset,
             init.interrupts.error,
             init.interrupts.magn,
             init.interrupts.accl,
             init.interrupts.gyro,
-            init.interrupts.qtern);
-    _sentral_set_algorithm_mode(self,
+            init.interrupts.qtern)      == SUCCESS)
+    && (_sentral_set_algorithm_mode(self,
             init.euler_mode,
-			init.raw_data);
-
-    _sentral_start(self);
+			init.raw_data)              == SUCCESS)
+    && (_sentral_start(self)            == SUCCESS))
+    || (self->error = ERROR);
 
     return self;
+}
+
+int sentral_get_error(SENtral* self) {
+    return self->error;
 }
 
 //PROPERTIES:
@@ -203,6 +215,7 @@ int sentral_set_accl_range(SENtral* self, unsigned short r){
     TRY(_load_param(self, SetMagnAccelRange, value));
     TRY(_retrieve_param(self, GetMagnAccelRange, value));
     self->accl_range = (unsigned short)bytes_to_uint(value+2, 2);
+    TRY(self->magn_range == (unsigned short)bytes_to_uint(value+0, 2) ? SUCCESS : ERROR)
     return SUCCESS;
 }
 
@@ -214,6 +227,7 @@ int sentral_set_magn_range(SENtral* self, unsigned short r){
     TRY(_load_param(self, SetMagnAccelRange, value));
     TRY(_retrieve_param(self, GetMagnAccelRange, value));
     self->magn_range = (unsigned short)bytes_to_uint(value+0, 2);
+    TRY(self->accl_range == (unsigned short)bytes_to_uint(value+2, 2) ? SUCCESS : ERROR)
     return SUCCESS;
 }
 
@@ -234,35 +248,35 @@ int sentral_interrupts_clear(SENtral* self, byte cause[1]){
 }
 
 
-int sentral_measure_magn(SENtral* self, float buffer[3], int timestamp[1]){
+int sentral_measure_magn(SENtral* self, float buffer[3], float timestamp[1]){
     byte data[8];
     TRY(sentral_measure_magn_bytes(self, data));
     timestamp[0] = _parse_sensor_bytes(self, data, buffer, MAGN_FS);
     return SUCCESS;
 }
 
-int sentral_measure_accl(SENtral* self, float buffer[3], int timestamp[1]){
+int sentral_measure_accl(SENtral* self, float buffer[3], float timestamp[1]){
     byte data[8];
     TRY(sentral_measure_accl_bytes(self, data));
     timestamp[0] = _parse_sensor_bytes(self, data, buffer, ACCL_FS);
     return SUCCESS;
 }
 
-int sentral_measure_gyro(SENtral* self, float buffer[3], int timestamp[1]){
+int sentral_measure_gyro(SENtral* self, float buffer[3], float timestamp[1]){
     byte data[8];
     TRY(sentral_measure_gyro_bytes(self, data))
     timestamp[0] = _parse_sensor_bytes(self, data, buffer, GYRO_FS);
     return SUCCESS;
 }
 
-int sentral_measure_qtern(SENtral* self, float buffer[4], int timestamp[1]) {
+int sentral_measure_qtern(SENtral* self, float buffer[4], float timestamp[1]) {
     byte data[18];
     TRY(sentral_measure_qtern_bytes(self, data));
     timestamp[0] = _parse_qtern_bytes(self, data, buffer);
     return SUCCESS;
 }
 
-int sentral_measure_all(SENtral* self, float results[13], int timestamps[4]){
+int sentral_measure_all(SENtral* self, float results[13], float timestamps[4]){
     byte data[42];
     TRY(sentral_measure_all_bytes(self, data));
 

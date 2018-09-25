@@ -52,6 +52,7 @@
 #include "fatfs.h"
 
 /* USER CODE BEGIN Includes */
+#include <math.h>
 #include "sentral.h"
 
 
@@ -160,11 +161,13 @@ int main(void)
   SENtralInit init = SENtralInitDefaults;
 
   sensor = sentral_init(i2c, init);
-  (		state == STATE_STARTING																					)
-  && (	sentral_set_accl_range(sensor, 16)						== SUCCESS										)
-  && (	sentral_set_gyro_range(sensor, 2000)					== SUCCESS										)
-  && (  state = STATE_MEASURING																					)
+  ((	sentral_get_error(sensor) 								== SUCCESS										)
+  && (	state 													== STATE_STARTING								)
+//  && (	sentral_set_accl_range(sensor, 16)						== SUCCESS										)
+//  && (	sentral_set_gyro_range(sensor, 2000)					== SUCCESS										)
+  && (  state = STATE_MEASURING																					))
   || (	state = STATE_ERROR																						);
+
 
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, 1);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
@@ -181,15 +184,16 @@ int main(void)
    		  byte interrupt_cause;
 
    		  char str[200];
-   		  int tb[4];
+   		  float tb[4];
    		  float mb[13];
    		  sentral_measure_all(sensor, mb, tb);
+   		  volatile double temp = sqrt(mb[0x7]*mb[0x7] + mb[0x8]*mb[0x8] + mb[0x9]*mb[0x9]);
 
    		  ( sentral_interrupts_clear(sensor, &interrupt_cause) == SUCCESS )
 		  && !( interrupt_cause & INT_ERROR_BITS)
    		  && sprintf(
   			  str,
-  			  "%lu,%d,%f,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f,%d,%f,%f,%f\n",
+  			  "%lu, %f, %f,%f,%f,%f, %f, %f,%f,%f, %f, %f,%f,%f, %f, %f,%f,%f\n",
   			  HAL_GetTick(),
   			  tb[0], mb[0x0], mb[0x1], mb[0x2], mb[0x3],
   			  tb[1], mb[0x4], mb[0x5], mb[0x6],

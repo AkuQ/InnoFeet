@@ -66,25 +66,25 @@ int sentral_interrupts_clear(SENtral*, byte buffer[1]);
 
 /// \param buffer Outputs X, Y, Z, W.<br>(W always 0 if sensor in euler mode.)
 /// \param timestamp Outputs timestamp (0 – 2048 msec).
-int sentral_measure_qtern(SENtral*, float buffer[4], int timestamp[1]);
+int sentral_measure_qtern(SENtral*, float buffer[4], float timestamp[1]);
 
 /// \param buffer Outputs X, Y, Z.
 /// \param timestamp Outputs timestamp (0 – 2048 msec).
-int sentral_measure_magn(SENtral*, float buffer[3], int timestamp[1]);
+int sentral_measure_magn(SENtral*, float buffer[3], float timestamp[1]);
 
 /// \param buffer Outputs X, Y, Z.
 /// \param timestamp Outputs timestamp (0 – 2048 msec).
-int sentral_measure_accl(SENtral*, float buffer[3], int timestamp[1]);
+int sentral_measure_accl(SENtral*, float buffer[3], float timestamp[1]);
 
 /// \param buffer Outputs X, Y, Z.
 /// \param timestamp Outputs timestamp (0 – 2048 msec).
-int sentral_measure_gyro(SENtral*, float buffer[3], int timestamp[1]);
+int sentral_measure_gyro(SENtral*, float buffer[3], float timestamp[1]);
 
 /// \param buffer Outputs:<ol start="0"><li>Qtern X</li><li>Qtern Y</li><li>Qtern Z</li>
 /// <li>Qtern W (always 0 if sensor in euler mode)</li><li>Magn X</li><li>Magn Y</li><li>Magn Z</li>
 /// <li>Accl X</li><li>Accl Y</li><li>Accl Z</li><li>Gyro X</li><li>Gyro Y</li><li>Gyro Z</li></ol>
 /// \param timestamp Outputs timestamps for Qtern, Magn, Accl, Gyro.<br>().
-int sentral_measure_all(SENtral*, float results[13], int timestamps[4]);
+int sentral_measure_all(SENtral*, float results[13], float timestamps[4]);
 
 
 /// Scale X, Y, Z, W to range 0.0 – 1.0 if in quaternion mode.
