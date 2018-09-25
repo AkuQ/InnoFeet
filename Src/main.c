@@ -50,6 +50,7 @@
 #include "main.h"
 #include "stm32l4xx_hal.h"
 #include "fatfs.h"
+#include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
 #include "sentral.h"
@@ -65,6 +66,7 @@ SPI_HandleTypeDef hspi1;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 static SENtral* sensor;
+static FATFS filesystem;
 static FIL file_data_out;
 static volatile int interrupted = 0;
 
@@ -175,15 +177,17 @@ int main(void)
   MX_SPI1_Init();
   MX_FATFS_Init();
   MX_I2C1_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
   // Initialize memory card
-
-  FATFS fs;
-  (		f_mount(&fs, "0:", 1) == FR_OK																			)
+  (		f_mount(&filesystem, "0:", 1) == FR_OK																			)
   && (	f_open(&file_data_out, "test.txt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK								)
   && (	state = STATE_STARTING																					)
   || (	state = STATE_ERROR																						);
+
+  volatile DWORD buffer = 0xFF;
+  volatile DRESULT res = disk_ioctl(0, GET_SECTOR_COUNT, &buffer );
 
   // Initialize sensor device
 //  I2C_Interface* i2c = i2c_init(SENtral_DEVICE_ADDRESS << 1, &read_i2c_bytes_cb, &write_i2c_bytes_cb);
@@ -264,8 +268,16 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C1|RCC_PERIPHCLK_USB;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLLSAI1;
+  PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_MSI;
+  PeriphClkInit.PLLSAI1.PLLSAI1M = 1;
+  PeriphClkInit.PLLSAI1.PLLSAI1N = 24;
+  PeriphClkInit.PLLSAI1.PLLSAI1P = RCC_PLLP_DIV7;
+  PeriphClkInit.PLLSAI1.PLLSAI1Q = RCC_PLLQ_DIV2;
+  PeriphClkInit.PLLSAI1.PLLSAI1R = RCC_PLLR_DIV2;
+  PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_48M2CLK;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -310,7 +322,7 @@ static void MX_I2C1_Init(void)
 
     /**Configure Analogue filter 
     */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_DISABLE) != HAL_OK)
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -376,10 +388,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, USB_DISCONNECT_Pin|LD3_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA1 PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_11|GPIO_PIN_12;
+  /*Configure GPIO pin : PA1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -405,12 +417,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SPI1_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB4 PB5 
-                           PB6 PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5 
-                          |GPIO_PIN_6|GPIO_PIN_7;
+  /*Configure GPIO pins : PB0 PB4 PB5 PB6 
+                           PB7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6 
+                          |GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : USB_DISCONNECT_Pin LD3_Pin */
+  GPIO_InitStruct.Pin = USB_DISCONNECT_Pin|LD3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SENSOR_INT_Pin */
@@ -426,13 +445,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF3_USART2;
   HAL_GPIO_Init(VCP_RX_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : LD3_Pin */
-  GPIO_InitStruct.Pin = LD3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PH3 */
   GPIO_InitStruct.Pin = GPIO_PIN_3;

@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
+  * @file           : usb_device.c
+  * @version        : v2.0_Cube
+  * @brief          : This file implements the USB Device
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -47,65 +47,123 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H__
-#define __MAIN_H__
-
 /* Includes ------------------------------------------------------------------*/
+
+#include "usb_device.h"
+#include "usbd_core.h"
+#include "usbd_desc.h"
+#include "usbd_msc.h"
+#include "usbd_storage_if.h"
 
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
-/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PV */
+/* Private variables ---------------------------------------------------------*/
 
-#define MCO_Pin GPIO_PIN_0
-#define MCO_GPIO_Port GPIOA
-#define VCP_TX_Pin GPIO_PIN_2
-#define VCP_TX_GPIO_Port GPIOA
-#define SPI1_CD_Pin GPIO_PIN_3
-#define SPI1_CD_GPIO_Port GPIOA
-#define SPI1_CS_Pin GPIO_PIN_4
-#define SPI1_CS_GPIO_Port GPIOA
-#define USB_DISCONNECT_Pin GPIO_PIN_1
-#define USB_DISCONNECT_GPIO_Port GPIOB
-#define SENSOR_INT_Pin GPIO_PIN_8
-#define SENSOR_INT_GPIO_Port GPIOA
-#define SENSOR_INT_EXTI_IRQn EXTI9_5_IRQn
-#define SWDIO_Pin GPIO_PIN_13
-#define SWDIO_GPIO_Port GPIOA
-#define SWCLK_Pin GPIO_PIN_14
-#define SWCLK_GPIO_Port GPIOA
-#define VCP_RX_Pin GPIO_PIN_15
-#define VCP_RX_GPIO_Port GPIOA
-#define LD3_Pin GPIO_PIN_3
-#define LD3_GPIO_Port GPIOB
+/* USER CODE END PV */
 
-/* ########################## Assert Selection ############################## */
+/* USER CODE BEGIN PFP */
+/* Private function prototypes -----------------------------------------------*/
+
+/* USER CODE END PFP */
+
+/* Return USBD_OK if the Battery Charging Detection mode (BCD) is used, else USBD_FAIL. */
+extern USBD_StatusTypeDef USBD_LL_BatteryCharging(USBD_HandleTypeDef *pdev);
+
+/* USB Device Core handle declaration. */
+USBD_HandleTypeDef hUsbDeviceFS;
+
+/*
+ * -- Insert your variables declaration here --
+ */
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/*
+ * -- Insert your external function declaration here --
+ */
+/* USER CODE BEGIN 1 */
+
+/* USER CODE END 1 */
+
 /**
-  * @brief Uncomment the line below to expanse the "assert_param" macro in the 
-  *        HAL drivers code
+  * Init USB device Library, add supported class and start the library
+  * @retval None
   */
-/* #define USE_FULL_ASSERT    1U */
-
-/* USER CODE BEGIN Private defines */
-#define SD_SPI_MISO_PIN GPIO_PIN_6
-#define SD_SPI_MOSI_PIN GPIO_PIN_7
-#define SD_SPI_SCK_PIN GPIO_PIN_1
-
-
-/* USER CODE END Private defines */
-
-#ifdef __cplusplus
- extern "C" {
-#endif
-void _Error_Handler(char *, int);
-
-#define Error_Handler() _Error_Handler(__FILE__, __LINE__)
-#ifdef __cplusplus
+void MX_USB_DEVICE_Init(void)
+{
+  /* USER CODE BEGIN USB_DEVICE_Init_PreTreatment */
+  
+  /* USER CODE END USB_DEVICE_Init_PreTreatment */
+  
+  /* Init Device Library, add supported class and start the library. */
+  USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
+  USBD_RegisterClass(&hUsbDeviceFS, &USBD_MSC);
+  USBD_MSC_RegisterStorage(&hUsbDeviceFS, &USBD_Storage_Interface_fops_FS);
+  /* Verify if the Battery Charging Detection mode (BCD) is used : */
+  /* If yes, the USB device is started in the HAL_PCDEx_BCD_Callback */
+  /* upon reception of PCD_BCD_DISCOVERY_COMPLETED message. */
+  /* If no, the USB device is started now. */
+  if (USBD_LL_BatteryCharging(&hUsbDeviceFS) != USBD_OK) {
+  USBD_Start(&hUsbDeviceFS);
+  }
+  /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
+  
+  /* USER CODE END USB_DEVICE_Init_PostTreatment */
 }
-#endif
 
-#endif /* __MAIN_H__ */
+/**
+  * @brief  Send BCD message to user layer
+  * @param  hpcd: PCD handle
+  * @param  msg: LPM message
+  * @retval None
+  */
+void HAL_PCDEx_BCD_Callback(PCD_HandleTypeDef *hpcd, PCD_BCD_MsgTypeDef msg)
+{
+  USBD_HandleTypeDef usbdHandle = hUsbDeviceFS;
+
+  /* USER CODE BEGIN 7 */
+  if (hpcd->battery_charging_active == ENABLE)
+  {
+    switch(msg)
+    {
+      case PCD_BCD_CONTACT_DETECTION:
+
+      break;
+
+      case PCD_BCD_STD_DOWNSTREAM_PORT:
+
+      break;
+
+      case PCD_BCD_CHARGING_DOWNSTREAM_PORT:
+
+      break;
+
+      case PCD_BCD_DEDICATED_CHARGING_PORT:
+
+      break;
+
+      case PCD_BCD_DISCOVERY_COMPLETED:
+        USBD_Start(&usbdHandle);
+      break;
+
+      case PCD_BCD_ERROR:
+      default:
+      break;
+    }
+  }
+  /* USER CODE END 7 */
+}
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -46,7 +46,7 @@
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Device/ST/STM32L4xx/Include" />
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Include" />
 									<listOptionValue builtIn="false" value="../../../Middlewares/Third_Party/FatFs/src" />
-								</option>
+								<listOptionValue builtIn="false" value="../../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc" /><listOptionValue builtIn="false" value="../../../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc" /></option>
 								<option id="com.atollic.truestudio.gcc.symbols.defined.1670122205" name="Defined symbols" superClass="com.atollic.truestudio.gcc.symbols.defined" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;" />
 									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;" />
@@ -193,7 +193,7 @@
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Device/ST/STM32L4xx/Include" />
 									<listOptionValue builtIn="false" value="../../../Drivers/CMSIS/Include" />
 									<listOptionValue builtIn="false" value="../../../Middlewares/Third_Party/FatFs/src" />
-								</option>
+								<listOptionValue builtIn="false" value="../../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc" /><listOptionValue builtIn="false" value="../../../Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc" /></option>
 								<option id="com.atollic.truestudio.gcc.symbols.defined.1670122205" name="Defined symbols" superClass="com.atollic.truestudio.gcc.symbols.defined" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__weak=&quot;__attribute__((weak))&quot;" />
 									<listOptionValue builtIn="false" value="__packed=&quot;__attribute__((__packed__))&quot;" />

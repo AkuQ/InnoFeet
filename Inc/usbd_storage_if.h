@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
+  * @file           : usbd_storage_if.h
+  * @version        : v2.0_Cube
+  * @brief          : Header for usbd_storage_if.c file.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -48,64 +48,110 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H__
-#define __MAIN_H__
-
-/* Includes ------------------------------------------------------------------*/
-
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private define ------------------------------------------------------------*/
-
-#define MCO_Pin GPIO_PIN_0
-#define MCO_GPIO_Port GPIOA
-#define VCP_TX_Pin GPIO_PIN_2
-#define VCP_TX_GPIO_Port GPIOA
-#define SPI1_CD_Pin GPIO_PIN_3
-#define SPI1_CD_GPIO_Port GPIOA
-#define SPI1_CS_Pin GPIO_PIN_4
-#define SPI1_CS_GPIO_Port GPIOA
-#define USB_DISCONNECT_Pin GPIO_PIN_1
-#define USB_DISCONNECT_GPIO_Port GPIOB
-#define SENSOR_INT_Pin GPIO_PIN_8
-#define SENSOR_INT_GPIO_Port GPIOA
-#define SENSOR_INT_EXTI_IRQn EXTI9_5_IRQn
-#define SWDIO_Pin GPIO_PIN_13
-#define SWDIO_GPIO_Port GPIOA
-#define SWCLK_Pin GPIO_PIN_14
-#define SWCLK_GPIO_Port GPIOA
-#define VCP_RX_Pin GPIO_PIN_15
-#define VCP_RX_GPIO_Port GPIOA
-#define LD3_Pin GPIO_PIN_3
-#define LD3_GPIO_Port GPIOB
-
-/* ########################## Assert Selection ############################## */
-/**
-  * @brief Uncomment the line below to expanse the "assert_param" macro in the 
-  *        HAL drivers code
-  */
-/* #define USE_FULL_ASSERT    1U */
-
-/* USER CODE BEGIN Private defines */
-#define SD_SPI_MISO_PIN GPIO_PIN_6
-#define SD_SPI_MOSI_PIN GPIO_PIN_7
-#define SD_SPI_SCK_PIN GPIO_PIN_1
-
-
-/* USER CODE END Private defines */
+#ifndef __USBD_STORAGE_IF_H__
+#define __USBD_STORAGE_IF_H__
 
 #ifdef __cplusplus
  extern "C" {
 #endif
-void _Error_Handler(char *, int);
 
-#define Error_Handler() _Error_Handler(__FILE__, __LINE__)
+/* Includes ------------------------------------------------------------------*/
+#include "usbd_msc.h"
+
+/* USER CODE BEGIN INCLUDE */
+
+/* USER CODE END INCLUDE */
+
+/** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
+  * @brief For Usb device.
+  * @{
+  */
+
+/** @defgroup USBD_STORAGE USBD_STORAGE
+  * @brief Header file for the usb_storage_if.c file
+  * @{
+  */
+
+/** @defgroup USBD_STORAGE_Exported_Defines USBD_STORAGE_Exported_Defines
+  * @brief Defines.
+  * @{
+  */
+
+/* USER CODE BEGIN EXPORTED_DEFINES */
+
+/* USER CODE END EXPORTED_DEFINES */
+
+/**
+  * @}
+  */
+
+/** @defgroup USBD_STORAGE_Exported_Types USBD_STORAGE_Exported_Types
+  * @brief Types.
+  * @{
+  */
+
+/* USER CODE BEGIN EXPORTED_TYPES */
+
+/* USER CODE END EXPORTED_TYPES */
+
+/**
+  * @}
+  */
+
+/** @defgroup USBD_STORAGE_Exported_Macros USBD_STORAGE_Exported_Macros
+  * @brief Aliases.
+  * @{
+  */
+
+/* USER CODE BEGIN EXPORTED_MACRO */
+
+/* USER CODE END EXPORTED_MACRO */
+
+/**
+  * @}
+  */
+
+/** @defgroup USBD_STORAGE_Exported_Variables USBD_STORAGE_Exported_Variables
+  * @brief Public variables.
+  * @{
+  */
+
+/** STORAGE Interface callback. */
+extern USBD_StorageTypeDef USBD_Storage_Interface_fops_FS;
+
+/* USER CODE BEGIN EXPORTED_VARIABLES */
+
+/* USER CODE END EXPORTED_VARIABLES */
+
+/**
+  * @}
+  */
+
+/** @defgroup USBD_STORAGE_Exported_FunctionsPrototype USBD_STORAGE_Exported_FunctionsPrototype
+  * @brief Public functions declaration.
+  * @{
+  */
+
+/* USER CODE BEGIN EXPORTED_FUNCTIONS */
+
+/* USER CODE END EXPORTED_FUNCTIONS */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __MAIN_H__ */
+#endif /* __USBD_STORAGE_IF_H__ */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
