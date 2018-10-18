@@ -147,12 +147,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // Initialize memory card
-  char* cvs_header = "t,qt,qx,qy,qz,qw,mt,mx,my,mz,at,ax,ay,az,gt,gx,gy,gz\n";
+  char* csv_header = "t,qt,qx,qy,qz,qw,mt,mx,my,mz,at,ax,ay,az,gt,gx,gy,gz\n";
 
   FATFS fs;
   (		f_mount(&fs, "0:", 1) == FR_OK																			)
   && (	f_open(&file_data_out, "data.csv", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK								)
-  && (	f_puts(cvs_header, &file_data_out) != -1																)
+  && (	f_puts(csv_header, &file_data_out) != -1																)
   && (	state = STATE_STARTING																					)
   || (	state = STATE_ERROR																						);
 
@@ -187,7 +187,6 @@ int main(void)
    		  float tb[4];
    		  float mb[13];
    		  sentral_measure_all(sensor, mb, tb);
-   		  volatile double temp = sqrt(mb[0x7]*mb[0x7] + mb[0x8]*mb[0x8] + mb[0x9]*mb[0x9]);
 
    		  ( sentral_interrupts_clear(sensor, &interrupt_cause) == SUCCESS )
 		  && !( interrupt_cause & INT_ERROR_BITS)
